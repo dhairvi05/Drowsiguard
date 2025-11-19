@@ -1,11 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Button, StyleSheet, Text, View, Dimensions } from 'react-native';
+import React, { useState, useRef, useEffect, useContext } from 'react';
+import { Button, StyleSheet, Text, View, Dimensions, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { getMlServerUrl } from '../config/network';
+import { useNavigation } from '@react-navigation/native';
+import { AuthContext } from '../context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function CameraScreen() {
+  const navigation = useNavigation();
+  const { user } = useContext(AuthContext);
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState('back'); // 'back' or 'front'
   const [detections, setDetections] = useState([]);
@@ -39,7 +44,7 @@ useEffect(() => {
         const response = await fetch(`${getMlServerUrl()}/predict`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: photo.base64 }),
+          body: JSON.stringify({ image: photo.base64, driverId: user?.id }),
         });
 
         if (!response.ok) {
@@ -122,6 +127,11 @@ useEffect(() => {
   return (
     <View style={styles.container}>
       <CameraView ref={cameraRef} style={styles.camera} facing={facing} />
+      <View style={styles.backButtonWrapper}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{padding: 6}}>
+          <Ionicons name="arrow-back" size={28} color="#fff" />
+        </TouchableOpacity>
+      </View>
 
       {alertVisible && (
         <View style={styles.alertBanner}>
@@ -258,5 +268,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     backgroundColor: 'rgba(0,0,0,0.5)',
     fontSize: 12,
+  },
+  backButtonWrapper: {
+    position: 'absolute',
+    top: 36,
+    left: 12,
+    zIndex: 999,
   },
 });

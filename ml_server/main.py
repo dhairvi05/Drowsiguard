@@ -7,6 +7,14 @@ import numpy as np
 from PIL import Image
 import io
 import base64
+from typing import Optional
+import requests
+import time
+
+# Per-driver drowsiness state
+_drowsy_state = {}
+
+BACKEND_URL = "http://localhost:5000" # <--- adjust as needed
 
 app = FastAPI()
 app.add_middleware(
@@ -20,6 +28,7 @@ model = YOLO("best.pt")
 
 class ImageBase64(BaseModel):
     image: str
+    driverId: Optional[str] = None
 
 @app.get("/health")
 async def health_check():
@@ -27,6 +36,7 @@ async def health_check():
 
 @app.post("/predict")
 async def predict(data: ImageBase64):
+    print(f"ML DEBUG: Received /predict POST with data: {data}")
     try:
         # Decode base64 image
         image_bytes = base64.b64decode(data.image)
@@ -38,6 +48,7 @@ async def predict(data: ImageBase64):
         
         # Run inference
         results = model(image)
+        now = time.time()
         
         # Handle different YOLO model types
         if len(results) > 0:
@@ -60,8 +71,64 @@ async def predict(data: ImageBase64):
                 conf = 0.5
             
             label = str(cls_idx)  # "0" for drowsy, "1" for not drowsy
-            
             print(f"Prediction: label={label}, confidence={conf:.3f}")
+            
+            # --- Drowsiness Alert State Machine ---
+            driverId = data.driverId
+            if driverId:
+                state = _drowsy_state.get(driverId, {"drowsy": False, "last_time": None, "seconds": 0, "last_alert": None})
+                prev_drowsy = state["drowsy"]
+                prev_alert = state["last_alert"]
+                last_time = state["last_time"]
+                seconds = state["seconds"]
+                is_drowsy = (label == "0")
+                # Only update if confidence is high enough (e.g. >0.6)
+                if is_drowsy and conf > 0.6:
+                    if last_time is not None:
+                        seconds += now - last_time
+                    else:
+                        seconds = 0
+                    state["drowsy"] = True
+                    state["last_time"] = now
+                    state["seconds"] = seconds
+                else:
+                    state["drowsy"] = False
+                    state["last_time"] = None
+                    state["seconds"] = 0
+                    # If previously drowsy, must send "clear" event
+                    if prev_drowsy and prev_alert != "clear":
+                        print(f"ML: Emitting CLEAR for driver {driverId}")
+                        requests.post(f"{BACKEND_URL}/ml/alert", json={"driverId": driverId, "type": "clear"}, timeout=2)
+                        state["last_alert"] = "clear"
+                # Threshold triggers
+                if state["drowsy"]:
+                    if seconds >= 20 and prev_alert != "critical":
+                        print(f"ML: Emitting CRITICAL for driver {driverId} after {seconds:.1f} sec")
+                        requests.post(f"{BACKEND_URL}/ml/alert", json={"driverId": driverId, "type": "critical"}, timeout=2)
+                        state["last_alert"] = "critical"
+                    elif seconds >= 10 and prev_alert != "normal" and seconds < 20:
+                        print(f"ML: Emitting NORMAL for driver {driverId} after {seconds:.1f} sec")
+                        requests.post(f"{BACKEND_URL}/ml/alert", json={"driverId": driverId, "type": "normal"}, timeout=2)
+                        state["last_alert"] = "normal"
+                _drowsy_state[driverId] = state
+            
+            # --- Drowsiness detected, make POST log with prints ---
+            if label == "0" and data.driverId:
+                log_data = {
+                    "driverId": data.driverId,
+                    "eventType": "drowsy",
+                    "confidence": conf
+                }
+                print(f"DEBUG: About to POST log to backend: {log_data}")
+                try:
+                    resp = requests.post(
+                        "http://localhost:5000/api/driver/logs/add",
+                        json=log_data,
+                        timeout=2
+                    )
+                    print(f"DEBUG: Log POST response: {resp.status_code} {resp.text}")
+                except Exception as log_err:
+                    print(f"ERROR: Failed to post log to backend: {log_err}")
             
             return {"detections": [{"label": label, "confidence": conf}]}
         else:

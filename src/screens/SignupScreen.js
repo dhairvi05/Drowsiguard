@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { signup } from "../api/api";
 import Logo from "../components/Logo";
 
@@ -45,31 +45,33 @@ export default function SignupScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Logo size={1.0} />
-      <TextInput style={styles.input} placeholder="Name" placeholderTextColor="#81e4f9" value={name} onChangeText={setName} />
-      <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#81e4f9" value={email} onChangeText={setEmail} />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#81e4f9"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <TextInput style={styles.input} placeholder="Role (Driver/Passenger)" placeholderTextColor="#81e4f9" value={role} onChangeText={setRole} />
-      <Button 
-        title={isLoading ? "Creating Account..." : "Signup"} 
-        color="#0b7992" 
-        onPress={handleSignup}
-        disabled={isLoading}
-      />
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      {success ? <Text style={styles.successText}>{success}</Text> : null}
-      <Text style={styles.link} onPress={() => navigation.navigate("Login")}>
-        Already have an account? Log in
-      </Text>
-    </View>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex: 1}} keyboardVerticalOffset={64}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Logo size={1.0} />
+        <TextInput style={styles.input} placeholder="Name" placeholderTextColor="#81e4f9" value={name} onChangeText={setName} />
+        <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#81e4f9" value={email} onChangeText={setEmail} />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#81e4f9"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <TextInput style={styles.input} placeholder="Role (Driver/Passenger)" placeholderTextColor="#81e4f9" value={role} onChangeText={setRole} />
+        <Button 
+          title={isLoading ? "Creating Account..." : "Signup"} 
+          color="#0b7992" 
+          onPress={handleSignup}
+          disabled={isLoading}
+        />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {success ? <Text style={styles.successText}>{success}</Text> : null}
+        <Text style={styles.link} onPress={() => navigation.navigate("Login")}>
+          Already have an account? Log in
+        </Text>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

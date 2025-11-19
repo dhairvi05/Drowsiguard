@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {useContext} from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { login as apiLogin } from "../api/api";
 import Logo from "../components/Logo";
 import { AuthContext } from '../context/AuthContext';
@@ -23,23 +23,25 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Logo size={1.0} />
-      <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#81e4f9"value={email} onChangeText={setEmail} />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#81e4f9"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <Button title="Login" onPress={handleLogin} />
-      {error ? <Text style={{ color: "red" }}>{error}</Text> : null}
-      <Text style={styles.link} onPress={() => navigation.navigate("Signup")}>
-        Don’t have an account? Sign up
-      </Text>
-    </View>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex: 1}} keyboardVerticalOffset={64}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Logo size={1.0} />
+        <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#81e4f9"value={email} onChangeText={setEmail} />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#81e4f9"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <Button title="Login" onPress={handleLogin} />
+        {error ? <Text style={{ color: "red" }}>{error}</Text> : null}
+        <Text style={styles.link} onPress={() => navigation.navigate("Signup")}>
+          Don’t have an account? Sign up
+        </Text>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
