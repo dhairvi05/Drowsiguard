@@ -120,17 +120,6 @@ Follow these steps to set up the project locally.
 
 ---
 
-## Team
-
-* Chitra Bhaskar - App Developer
-  * GitHub: [https://github.com/Chitra-2024](https://github.com/Chitra-2024)
-  * LinkedIn: [www.linkedin.com/in/chitra-bhaskar-b50184297](https://www.linkedin.com/in/chitra-bhaskar-b50184297)
-* Aditi Rao - ML Developer
-  * Github: [https://github.com/aditirao29](https://github.com/aditirao29)
-  * LinkedIn: [www.linkedin.com/in/aditi-rao-342248294](https://www.linkedin.com/in/aditi-rao-342248294)
-
----
-
 ## Acknowledgments
 
 * YOLOv8 object detection models
